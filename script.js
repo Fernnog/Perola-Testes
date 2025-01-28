@@ -221,8 +221,7 @@ function gerarPDFOrcamento(orcamento) {
 
     // Adicionar logo de forma assíncrona
     const logoImg = new Image();
-    logoImg.src = 'logo_perola_rara.png'; // Certifique-se de que o caminho está correto
-
+    logoImg.src = './logo_perola_rara.png'; // Caminho relativo com ./
     logoImg.onload = () => {
         doc.addImage(logoImg, 'PNG', 10, 10, 50, 25);
 
