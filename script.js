@@ -6,41 +6,12 @@ let numeroPedido = 1;
 const anoAtual = new Date().getFullYear();
 /* ==== FIM SEÇÃO - VARIÁVEIS GLOBAIS ==== */
 
-/* ==== INÍCIO SEÇÃO - CARREGAR BIBLIOTECAS E DADOS ==== */
-// Função para carregar a biblioteca jsPDF de forma assíncrona
-function carregarJsPDF() {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-    });
-}
-
-// Função para carregar a biblioteca jsPDF-AutoTable de forma assíncrona
-function carregarJsPDFAutoTable() {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-    });
-}
-
-// Carregar as bibliotecas e os dados
-Promise.all([carregarJsPDF(), carregarJsPDFAutoTable()])
-    .then(() => {
-        console.log('Bibliotecas jsPDF e jsPDF-AutoTable carregadas com sucesso.');
-        carregarDados();
-        mostrarPagina('form-orcamento');
-    })
-    .catch(erro => {
-        console.error('Erro ao carregar as bibliotecas:', erro);
-        alert('Erro ao carregar as bibliotecas. Por favor, recarregue a página.');
-    });
-/* ==== FIM SEÇÃO - CARREGAR BIBLIOTECAS E DADOS ==== */
+/* ==== INÍCIO SEÇÃO - CARREGAR DADOS DO LOCALSTORAGE ==== */
+document.addEventListener('DOMContentLoaded', () => {
+    carregarDados();
+    mostrarPagina('form-orcamento');
+});
+/* ==== FIM SEÇÃO - CARREGAR DADOS DO LOCALSTORAGE ==== */
 
 /* ==== INÍCIO SEÇÃO - FUNÇÕES AUXILIARES ==== */
 function formatarMoeda(valor) {
@@ -154,21 +125,20 @@ function gerarOrcamento() {
     const orcamento = {
         numero: gerarNumeroFormatado(numeroOrcamento),
         dataOrcamento: document.getElementById("dataOrcamento").value,
-        dataEntrega: document.getElementById("dataEntrega").value,
+        dataValidade: document.getElementById("dataValidade").value,
         cliente: document.getElementById("cliente").value,
         endereco: document.getElementById("endereco").value,
         tema: document.getElementById("tema").value,
-        nome: document.getElementById("nome").value,
-        contato: document.getElementById("contato").value,
         cidade: document.getElementById("cidade").value,
+        contato: document.getElementById("contato").value,
         cores: document.getElementById("cores").value,
-        idade: document.getElementById("idade").value,
         produtos: [],
         entrega: Array.from(document.querySelectorAll('input[name="entrega"]:checked')).map(el => el.value),
         pagamento: Array.from(document.querySelectorAll('input[name="pagamento"]:checked')).map(el => el.value),
         valorFrete: parseFloat(document.getElementById("valorFrete").value.replace(/[^\d,]/g, '').replace(',', '.')),
         valorOrcamento: parseFloat(document.getElementById("valorOrcamento").value.replace(/[^\d,]/g, '').replace(',', '.')),
-        total: parseFloat(document.getElementById("total").value.replace(/[^\d,]/g, '').replace(',', '.'))
+        total: parseFloat(document.getElementById("total").value.replace(/[^\d,]/g, '').replace(',', '.')),
+        observacoes: document.getElementById("observacoes").value
     };
 
     const produtos = document.querySelectorAll("#tabelaProdutos tbody tr");
@@ -183,9 +153,9 @@ function gerarOrcamento() {
 
     orcamentos.push(orcamento);
     numeroOrcamento++;
-
-    // Gerar PDF do orçamento
-    gerarPDFOrcamento(orcamento);
+    
+    // Chamar a função para exibir o orçamento em HTML
+    exibirOrcamentoEmHTML(orcamento);
 
     // Gerar backup dos dados
     exportarDados();
@@ -201,100 +171,71 @@ function gerarOrcamento() {
     alert("Orçamento gerado com sucesso!");
 }
 
-function gerarPDFOrcamento(orcamento) {
-    // Verificar se a biblioteca jsPDF foi carregada usando window.jsPDF
-    if (typeof window.jsPDF !== 'function' && typeof window.jspdf.jsPDF !== 'function') {
-        console.error('Biblioteca jsPDF não encontrada. Certifique-se de que o script foi carregado corretamente.');
-        alert('Erro ao gerar PDF: Biblioteca jsPDF não encontrada.');
-        return;
-    }
+function exibirOrcamentoEmHTML(orcamento) {
+    // Cria uma nova janela/aba
+    const janelaOrcamento = window.open('orcamento.html', '_blank');
 
-    // Cria uma nova instância do jsPDF, adaptando-se à forma como a biblioteca é exposta
-    const doc = typeof window.jsPDF === 'function' ? new window.jsPDF() : new window.jspdf.jsPDF();
+    // Aguarda a nova janela carregar o HTML base
+    janelaOrcamento.addEventListener('load', () => {
+        // Obtém a referência para o div onde o conteúdo será inserido
+        const conteudoOrcamento = janelaOrcamento.document.getElementById("conteudo-orcamento");
 
-    // Função auxiliar para adicionar texto com quebra de linha
-    function addText(doc, text, x, y, options = {}) {
-        const textLines = doc.splitTextToSize(text, options.maxWidth || 180);
-        doc.text(textLines, x, y, options);
-        return textLines.length * (options.fontSize || 12) * 0.352778; // Aproximação da altura da linha em mm
-    }
+        // Adiciona as informações do orçamento
+        let html = `
+            <h2>Orçamento Nº ${orcamento.numero}</h2>
+            <div class="info-orcamento">
+                <strong>Data do Orçamento:</strong> ${orcamento.dataOrcamento}<br>
+                <strong>Data de Validade:</strong> ${orcamento.dataValidade}<br>
+                <strong>Cliente:</strong> ${orcamento.cliente}<br>
+                <strong>Endereço:</strong> ${orcamento.endereco}<br>
+                <strong>Cidade:</strong> ${orcamento.cidade}<br>
+                <strong>Contato:</strong> ${orcamento.contato}<br>
+                ${orcamento.tema ? `<strong>Tema:</strong> ${orcamento.tema}<br>` : ''}
+                ${orcamento.cores ? `<strong>Cores:</strong> ${orcamento.cores}<br>` : ''}
+            </div>
+            <h3>Produtos</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Quantidade</th>
+                        <th>Descrição do Produto</th>
+                        <th>Valor Unit.</th>
+                        <th>Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
 
-    // Adicionar logo de forma assíncrona
-    const logoImg = new Image();
-    logoImg.src = './logo_perola_rara.png'; // Caminho relativo com ./
-    logoImg.onload = () => {
-        doc.addImage(logoImg, 'PNG', 10, 10, 50, 25);
-
-        let y = 40;
-        const lineHeight = 5; // Espaçamento entre linhas
-
-        // Cabeçalho do Orçamento
-        doc.setFontSize(12);
-        y += addText(doc, `Orçamento Nº: ${orcamento.numero}`, 10, y);
-        y += addText(doc, `Data: ${orcamento.dataOrcamento}`, 10, y + lineHeight);
-        y += addText(doc, `Cliente: ${orcamento.cliente}`, 10, y + lineHeight * 2);
-        y += addText(doc, `Endereço: ${orcamento.endereco}`, 10, y + lineHeight * 3, { maxWidth: 180 });
-        y += addText(doc, `Tema: ${orcamento.tema}`, 10, y + lineHeight, { maxWidth: 180 });
-        y += addText(doc, `Nome: ${orcamento.nome}`, 10, y + lineHeight);
-        y += addText(doc, `Contato: ${orcamento.contato}`, 10, y + lineHeight);
-        y += addText(doc, `Cidade: ${orcamento.cidade}`, 10, y + lineHeight);
-        y += addText(doc, `Cores: ${orcamento.cores}`, 10, y + lineHeight);
-        if (orcamento.idade) {
-            y += addText(doc, `Idade: ${orcamento.idade}`, 10, y + lineHeight);
-        }
-
-        // Tabela de Produtos
-        y += lineHeight * 2;
-        const headers = ["Quantidade", "Descrição do Produto", "Valor Unit.", "Valor Total"];
-        const rows = orcamento.produtos.map(produto => [
-            produto.quantidade,
-            produto.descricao,
-            formatarMoeda(produto.valorUnit),
-            formatarMoeda(produto.valorTotal)
-        ]);
-
-        doc.autoTable({
-            startY: y,
-            head: [headers],
-            body: rows,
-            theme: 'grid',
-            styles: {
-                fontSize: 10,
-                cellPadding: 1,
-                overflow: 'linebreak',
-                halign: 'left',
-                valign: 'middle',
-                lineColor: [0, 0, 0],
-                lineWidth: 0.1
-            },
-            columnStyles: {
-                0: { cellWidth: 20 },
-                1: { cellWidth: 80 },
-                2: { cellWidth: 30 },
-                3: { cellWidth: 30 }
-            }
+        // Adiciona as linhas de produtos
+        orcamento.produtos.forEach(produto => {
+            html += `
+                <tr>
+                    <td>${produto.quantidade}</td>
+                    <td>${produto.descricao}</td>
+                    <td>${formatarMoeda(produto.valorUnit)}</td>
+                    <td>${formatarMoeda(produto.valorTotal)}</td>
+                </tr>
+            `;
         });
 
-        y = doc.lastAutoTable.finalY + lineHeight;
+        html += `
+                </tbody>
+            </table>
+            <div class="info-orcamento">
+                <strong>Entrega:</strong> ${orcamento.entrega.join(', ')}<br>
+                <strong>Pagamento:</strong> ${orcamento.pagamento.join(', ')}<br>
+                <strong>Valor do Frete:</strong> ${formatarMoeda(orcamento.valorFrete)}<br>
+                <strong>Valor do Orçamento:</strong> ${formatarMoeda(orcamento.valorOrcamento)}<br>
+                <strong>Total:</strong> ${formatarMoeda(orcamento.total)}<br>
+                ${orcamento.observacoes ? `<strong>Observações:</strong> ${orcamento.observacoes}<br>` : ''}
+            </div>
+        `;
 
-        // Informações de Entrega e Pagamento
-        y += addText(doc, `Entrega: ${orcamento.entrega.join(', ')}`, 10, y);
-        y += addText(doc, `Pagamento: ${orcamento.pagamento.join(', ')}`, 10, y + lineHeight);
-
-        // Totais
-        y += addText(doc, `Valor do Frete: ${formatarMoeda(orcamento.valorFrete)}`, 10, y + lineHeight * 2);
-        y += addText(doc, `Valor do Orçamento: ${formatarMoeda(orcamento.valorOrcamento)}`, 10, y + lineHeight * 3);
-        y += addText(doc, `Total: ${formatarMoeda(orcamento.total)}`, 10, y + lineHeight * 4);
-
-        // Salvar o PDF
-        doc.save(`orcamento_${orcamento.numero}.pdf`);
-    };
-
-    logoImg.onerror = () => {
-        console.error('Erro ao carregar a imagem do logo.');
-        alert('Erro ao gerar PDF: Imagem do logo não encontrada.');
-    };
+        // Insere o HTML do orçamento na nova janela
+        conteudoOrcamento.innerHTML = html;
+    });
 }
+
 /* ==== FIM SEÇÃO - GERAÇÃO DE ORÇAMENTO ==== */
 
 /* ==== INÍCIO SEÇÃO - ORÇAMENTOS GERADOS ==== */
@@ -314,7 +255,8 @@ function mostrarOrcamentosGerados() {
         cellData.textContent = orcamento.dataOrcamento;
         cellCliente.textContent = orcamento.cliente;
         cellTotal.textContent = formatarMoeda(orcamento.total);
-        cellAcoes.innerHTML = `<button type="button" onclick="gerarPedido('${orcamento.numero}')">Gerar Pedido</button>`;
+        cellAcoes.innerHTML = `<button type="button" onclick="gerarPedido('${orcamento.numero}')">Gerar Pedido</button>
+                               <button type="button" onclick="exibirOrcamentoEmHTML(orcamentos.find(o => o.numero === '${orcamento.numero}'))">Visualizar</button>`;
     });
 }
 
@@ -347,7 +289,8 @@ function atualizarListaOrcamentos(orcamentosFiltrados) {
         row.insertCell().textContent = orcamento.dataOrcamento;
         row.insertCell().textContent = orcamento.cliente;
         row.insertCell().textContent = formatarMoeda(orcamento.total);
-        row.insertCell().innerHTML = `<button type="button" onclick="gerarPedido('${orcamento.numero}')">Gerar Pedido</button>`;
+        row.insertCell().innerHTML = `<button type="button" onclick="gerarPedido('${orcamento.numero}')">Gerar Pedido</button>
+                                       <button type="button" onclick="exibirOrcamentoEmHTML(orcamentos.find(o => o.numero === '${orcamento.numero}'))">Visualizar</button>`;
     });
 }
 /* ==== FIM SEÇÃO - ORÇAMENTOS GERADOS ==== */
@@ -422,11 +365,9 @@ function editarPedido(numeroPedido) {
     document.getElementById("clienteEdicao").value = pedido.cliente;
     document.getElementById("enderecoEdicao").value = pedido.endereco;
     document.getElementById("temaEdicao").value = pedido.tema;
-    document.getElementById("nomeEdicao").value = pedido.nome;
-    document.getElementById("contatoEdicao").value = pedido.contato;
     document.getElementById("cidadeEdicao").value = pedido.cidade;
+    document.getElementById("contatoEdicao").value = pedido.contato;
     document.getElementById("coresEdicao").value = pedido.cores;
-    document.getElementById("idadeEdicao").value = pedido.idade || '';
     document.getElementById("valorFreteEdicao").value = formatarMoeda(pedido.valorFrete);
     document.getElementById("valorPedidoEdicao").value = formatarMoeda(pedido.valorOrcamento); // Usar valorOrcamento como valor do pedido
     document.getElementById("totalEdicao").value = formatarMoeda(pedido.total);
@@ -475,11 +416,9 @@ function atualizarPedido() {
         cliente: document.getElementById("clienteEdicao").value,
         endereco: document.getElementById("enderecoEdicao").value,
         tema: document.getElementById("temaEdicao").value,
-        nome: document.getElementById("nomeEdicao").value,
-        contato: document.getElementById("contatoEdicao").value,
         cidade: document.getElementById("cidadeEdicao").value,
+        contato: document.getElementById("contatoEdicao").value,
         cores: document.getElementById("coresEdicao").value,
-        idade: document.getElementById("idadeEdicao").value,
         produtos: [],
         entrega: Array.from(document.querySelectorAll('input[name="entregaEdicao"]:checked')).map(el => el.value),
         pagamento: Array.from(document.querySelectorAll('input[name="pagamentoEdicao"]:checked')).map(el => el.value),
