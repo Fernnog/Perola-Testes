@@ -5,19 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pérola Rara - Gerenciamento de Pedidos</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Inclua jsPDF e AutoTable -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="./script.js"></script>
 </head>
 <!-- ==== FIM SEÇÃO - HEAD ==== -->
 <body>
     <div class="container">
         <!-- ==== INÍCIO SEÇÃO - CABEÇALHO ==== -->
         <header>
-            <img src="logo_perola_rara.png" alt="Logo Pérola Rara" id="logo">
+            <img src="./logo_perola_rara.png" alt="Logo Pérola Rara" id="logo">
             <h1>Pérola Rara</h1>
             <hr class="titulo">
             <nav>
@@ -44,8 +41,8 @@
                         <input type="date" id="dataOrcamento" name="dataOrcamento">
                     </div>
                     <div class="form-group">
-                        <label for="dataEntrega">Data da Entrega:</label>
-                        <input type="date" id="dataEntrega" name="dataEntrega">
+                        <label for="dataValidade">Data de Validade:</label>
+                        <input type="date" id="dataValidade" name="dataValidade">
                     </div>
                 </div>
                 <div class="form-row">
@@ -64,8 +61,8 @@
                         <input type="text" id="tema" name="tema" placeholder="Tema do Orçamento">
                     </div>
                     <div class="form-group">
-                        <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" placeholder="Nome (se diferente do cliente)">
+                        <label for="cidade">Cidade:</label>
+                        <input type="text" id="cidade" name="cidade" placeholder="Cidade do Cliente">
                     </div>
                 </div>
                 <div class="form-row">
@@ -74,18 +71,8 @@
                         <input type="text" id="contato" name="contato" placeholder="Telefone, Email, etc.">
                     </div>
                     <div class="form-group">
-                        <label for="cidade">Cidade:</label>
-                        <input type="text" id="cidade" name="cidade" placeholder="Cidade do Cliente">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="cores">Cores:</label>
                         <input type="text" id="cores" name="cores" placeholder="Cores Preferidas">
-                    </div>
-                    <div class="form-group">
-                        <label for="idade">Idade:</label>
-                        <input type="number" id="idade" name="idade" placeholder="Idade (se aplicável)">
                     </div>
                 </div>
                 <hr class="tabela">
@@ -137,17 +124,233 @@
                         <input type="text" id="total" name="total" value="0,00" readonly>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="observacoes">Observações:</label>
+                        <textarea id="observacoes" name="observacoes" rows="4"></textarea>
+                    </div>
+                </div>
                 <button type="button" onclick="gerarOrcamento()">Gerar Orçamento</button>
             </form>
         </section>
         <!-- ==== FIM SEÇÃO - FORMULÁRIO DE ORÇAMENTO ==== -->
 
-        <!-- ==== OUTRAS SEÇÕES ==== -->
-        <!-- ... (mantive as demais seções inalteradas para foco no formulário de orçamento) ... -->
-        <!-- Para manter a resposta concisa, não incluirei todas as seções aqui. Certifique-se de incluir as demais seções conforme seu código original. -->
+        <!-- ==== INÍCIO SEÇÃO - ORÇAMENTOS GERADOS ==== -->
+        <section id="orcamentos-gerados" class="pagina" style="display:none;">
+            <h2>Orçamentos Gerados</h2>
+            <div class="filtro-data">
+                <label for="filtroDataInicioOrcamento">Início:</label>
+                <input type="date" id="filtroDataInicioOrcamento">
+                <label for="filtroDataFimOrcamento">Fim:</label>
+                <input type="date" id="filtroDataFimOrcamento">
+                <label for="filtroNumeroOrcamento">Número:</label>
+                <input type="number" id="filtroNumeroOrcamento" placeholder="Número do Orçamento">
+                <label for="filtroAnoOrcamento">Ano:</label>
+                <input type="number" id="filtroAnoOrcamento" placeholder="Ano do Orçamento">
+                <button type="button" onclick="filtrarOrcamentos()">Filtrar</button>
+            </div>
+            <table id="tabela-orcamentos">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Linhas de orçamentos serão adicionadas aqui -->
+                </tbody>
+            </table>
+        </section>
+        <!-- ==== FIM SEÇÃO - ORÇAMENTOS GERADOS ==== -->
+
+        <!-- ==== INÍCIO SEÇÃO - LISTA DE PEDIDOS ==== -->
+        <section id="lista-pedidos" class="pagina" style="display:none;">
+            <h2>Pedidos Realizados</h2>
+            <table id="tabela-pedidos">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Data do Pedido</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Linhas de pedidos serão adicionadas aqui -->
+                </tbody>
+            </table>
+        </section>
+        <!-- ==== FIM SEÇÃO - LISTA DE PEDIDOS ==== -->
+
+        <!-- ==== INÍCIO SEÇÃO - FORMULÁRIO DE EDIÇÃO DE PEDIDO ==== -->
+        <section id="form-edicao-pedido" class="pagina" style="display:none;">
+            <h2>Editar Pedido</h2>
+            <hr class="subtitulo">
+            <form id="edicaoPedido">
+                <!-- Campos do formulário (semelhantes ao formulário de orçamento) -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataPedidoEdicao">Data do Pedido:</label>
+                        <input type="date" id="dataPedidoEdicao" name="dataPedidoEdicao">
+                    </div>
+                    <div class="form-group">
+                        <label for="dataEntregaEdicao">Data da Entrega:</label>
+                        <input type="date" id="dataEntregaEdicao" name="dataEntregaEdicao">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="clienteEdicao">Cliente:</label>
+                        <input type="text" id="clienteEdicao" name="clienteEdicao" placeholder="Nome do Cliente">
+                    </div>
+                    <div class="form-group">
+                        <label for="enderecoEdicao">Endereço:</label>
+                        <input type="text" id="enderecoEdicao" name="enderecoEdicao" placeholder="Endereço do Cliente">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="temaEdicao">Tema:</label>
+                        <input type="text" id="temaEdicao" name="temaEdicao" placeholder="Tema do Pedido">
+                    </div>
+                    <div class="form-group">
+                        <label for="cidadeEdicao">Cidade:</label>
+                        <input type="text" id="cidadeEdicao" name="cidadeEdicao" placeholder="Cidade do Cliente">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contatoEdicao">Contato:</label>
+                        <input type="text" id="contatoEdicao" name="contatoEdicao" placeholder="Telefone, Email, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="coresEdicao">Cores:</label>
+                        <input type="text" id="coresEdicao" name="coresEdicao" placeholder="Cores Preferidas">
+                    </div>
+                </div>
+                <hr class="tabela">
+                <div class="table-responsive">
+                    <table id="tabelaProdutosEdicao">
+                        <thead>
+                            <tr>
+                                <th>Quantidade</th>
+                                <th>Descrição do Produto</th>
+                                <th>Valor Unit.</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Linhas de produtos serão adicionadas aqui -->
+                        </tbody>
+                    </table>
+                    <button type="button" onclick="adicionarProdutoEdicao()">Adicionar Produto</button>
+                </div>
+                <hr class="final-tabela">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Entrega:</label>
+                        <label><input type="checkbox" name="entregaEdicao" value="entrega"> Entrega</label>
+                        <label><input type="checkbox" name="entregaEdicao" value="retirada"> Retirada</label>
+                        <label><input type="checkbox" name="entregaEdicao" value="correios"> Correios</label>
+                        <label><input type="checkbox" name="entregaEdicao" value="motoTaxi"> Moto/Taxi</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Pagamento:</label>
+                        <label><input type="checkbox" name="pagamentoEdicao" value="pix"> PIX</label>
+                        <label><input type="checkbox" name="pagamentoEdicao" value="linkCartao"> Link Cartão</label>
+                        <label><input type="checkbox" name="pagamentoEdicao" value="dinheiro"> Dinheiro</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="valorFreteEdicao">Valor do Frete (R$):</label>
+                        <input type="text" id="valorFreteEdicao" name="valorFreteEdicao" value="0,00" onblur="formatarCampoMoeda(this); atualizarTotaisEdicao()">
+                    </div>
+                    <div class="form-group">
+                        <label for="valorPedidoEdicao">Valor do Pedido (R$):</label>
+                        <input type="text" id="valorPedidoEdicao" name="valorPedidoEdicao" value="0,00" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="totalEdicao">Total (R$):</label>
+                        <input type="text" id="totalEdicao" name="totalEdicao" value="0,00" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="entradaEdicao">Entrada (R$):</label>
+                        <input type="text" id="entradaEdicao" name="entradaEdicao" value="0,00" onblur="formatarCampoMoeda(this); atualizarRestanteEdicao()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="restanteEdicao">Restante (R$):</label>
+                        <input type="text" id="restanteEdicao" name="restanteEdicao" value="0,00" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="lucroEdicao">Lucro (R$):</label>
+                        <input type="text" id="lucroEdicao" name="lucroEdicao" value="0,00" onblur="formatarCampoMoeda(this)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="observacoesEdicao">Observações:</label>
+                    <textarea id="observacoesEdicao" name="observacoesEdicao" rows="4"></textarea>
+                </div>
+                <button type="button" onclick="atualizarPedido()">Salvar Alterações</button>
+            </form>
+        </section>
+        <!-- ==== FIM SEÇÃO - FORMULÁRIO DE EDIÇÃO DE PEDIDO ==== -->
+
+        <!-- ==== INÍCIO SEÇÃO - RELATÓRIO ==== -->
+        <section id="relatorio" class="pagina" style="display:none;">
+            <h2>Relatório de Pedidos</h2>
+            <div class="filtro-data">
+                <label for="filtroDataInicio">Início:</label>
+                <input type="date" id="filtroDataInicio">
+                <label for="filtroDataFim">Fim:</label>
+                <input type="date" id="filtroDataFim">
+                <button type="button" onclick="filtrarPedidosRelatorio()">Gerar Relatório</button>
+            </div>
+            <div id="relatorio-conteudo">
+                <!-- Conteúdo do relatório será exibido aqui -->
+            </div>
+            <button type="button" onclick="gerarRelatorioCSV()">Exportar Relatório (CSV)</button>
+        </section>
+        <!-- ==== FIM SEÇÃO - RELATÓRIO ==== -->
+
+        <!-- ==== INÍCIO SEÇÃO - IMPORTAR EXPORTAR ==== -->
+        <section id="backup" class="pagina" style="display:none;">
+            <h2>Importar e Exportar Dados</h2>
+
+            <div>
+                <input type="file" id="inputImportar" accept=".json">
+                <button type="button" onclick="importarDados()">Importar Dados</button>
+            </div>
+
+            <div>
+                <button type="button" onclick="exportarDados()">Exportar Dados</button>
+            </div>
+        </section>
+        <!-- ==== FIM SEÇÃO - IMPORTAR EXPORTAR ==== -->
+
+        <!-- ==== INÍCIO SEÇÃO - VISUALIZAR ORÇAMENTO ==== -->
+        <section id="visualizar-orcamento" class="pagina" style="display:none;">
+            <div class="header-orcamento">
+                <img src="./logo_perola_rara.png" alt="Logo Pérola Rara" id="logo-orcamento">
+                <h1>Pérola Rara</h1>
+                <p class="contato-empresa">(65) 99250-3151 | @perolararafraldapersonalizada</p>
+            </div>
+            <hr class="titulo">
+            <div id="conteudo-orcamento">
+                <!-- O conteúdo do orçamento será inserido aqui -->
+            </div>
+        </section>
+        <!-- ==== FIM SEÇÃO - VISUALIZAR ORÇAMENTO ==== -->
     </div>
 
-    <!-- Inclusão do script.js no final do body -->
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>
