@@ -52,8 +52,7 @@ hr.final-tabela {
 /* ==== INÍCIO SEÇÃO - CABEÇALHO (PÁGINA PRINCIPAL) ==== */
 .top-bar {
     display: flex; /* Ativa o flexbox */
-    justify-content: space-between; /* Espaço entre os elementos, empurrando o logo para a esquerda e o painel para a direita */
-    align-items: center; /* Alinha os itens verticalmente ao centro */
+    justify-content: flex-end; /* Alinha o painel à direita */
     padding: 10px 20px; /* Espaçamento interno na barra superior */
 }
 
@@ -65,11 +64,17 @@ header {
     margin-bottom: 20px;
 }
 
+.logo-container {
+    margin-top: 20px; /* Espaço entre o painel e o logo */
+    margin-bottom: 10px; /* Espaço entre o painel e o logo */
+    text-align: center; /* Centraliza o logo horizontalmente */
+}
+
 #logo {
     max-width: 150px;
     height: auto;
     display: block;
-    margin: 0 auto 10px;
+    margin: 0 auto; /* Centraliza o logo horizontalmente e espaçamento*/
 }
 
 h1, h2 {
