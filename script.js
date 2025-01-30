@@ -10,6 +10,7 @@ const anoAtual = new Date().getFullYear();
 document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
     mostrarPagina('form-orcamento');
+    atualizarPainelUltimoBackup();
 });
 /* ==== FIM SEÇÃO - CARREGAR DADOS DO LOCALSTORAGE ==== */
 
@@ -303,21 +304,23 @@ function gerarPedido(numeroOrcamento) {
         return;
     }
 
+    numeroPedido++; // Incrementar numeroPedido antes de usá-lo
+
     const pedido = {
-        numero: gerarNumeroFormatado(numeroPedido),
+        numero: gerarNumeroFormatado(numeroPedido), // Usar numeroPedido para gerar o número do pedido
         ...orcamento, // Copia os dados do orçamento para o pedido
         dataPedido: new Date().toISOString().split('T')[0], // Define a data do pedido como hoje
+        dataEntrega: orcamento.dataValidade, // Usar dataValidade como dataEntrega
         entrada: 0,
         restante: orcamento.total,
         lucro: 0,
         observacoes: ''
     };
 
-    // Remove o número do orçamento, pois agora é um pedido
-    delete pedido.numero;
+    // Remover campo dataValidade, pois não faz parte do pedido
+    delete pedido.dataValidade;
 
     pedidos.push(pedido);
-    numeroPedido++;
 
     // Gerar backup dos dados
     exportarDados();
@@ -410,7 +413,7 @@ function atualizarPedido() {
     }
 
     const pedidoAtualizado = {
-        numero: numeroPedido,
+        numero: numeroPedido, // Preencher o número do pedido
         dataPedido: document.getElementById("dataPedidoEdicao").value,
         dataEntrega: document.getElementById("dataEntregaEdicao").value,
         cliente: document.getElementById("clienteEdicao").value,
@@ -507,20 +510,35 @@ function exportarDados() {
     const blob = new Blob([dadosParaExportar], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 
+    // Obter data e hora atuais
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = (agora.getMonth() + 1).toString().padStart(2, '0'); // +1 porque os meses começam em 0
+    const dia = agora.getDate().toString().padStart(2, '0');
+    const hora = agora.getHours().toString().padStart(2, '0');
+    const minuto = agora.getMinutes().toString().padStart(2, '0');
+    const nomeArquivo = `${ano}${mes}${dia}_${hora}${minuto}_Backup_Pérola_Rara.json`;
+
+    // Salvar informações do backup no localStorage
+    localStorage.setItem('ultimoBackup', JSON.stringify({ nomeArquivo, data: agora.toISOString() }));
+
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'backup_perola_rara.json';
+    a.download = nomeArquivo;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    atualizarPainelUltimoBackup();
 }
 
 function importarDados() {
     const inputImportar = document.getElementById('inputImportar');
     if (inputImportar.files.length > 0) {
         const arquivo = inputImportar.files[0];
+        const nomeArquivo = arquivo.name; // Obter o nome do arquivo
         const leitor = new FileReader();
 
         leitor.onload = function (e) {
@@ -532,8 +550,18 @@ function importarDados() {
                 numeroPedido = dadosImportados.numeroPedido || 1;
 
                 salvarDados();
+
+                // Extrair data e hora do nome do arquivo e salvar no localStorage
+                const match = nomeArquivo.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+                if (match) {
+                    const [, ano, mes, dia, hora, minuto] = match;
+                    const dataArquivo = new Date(`${ano}-${mes}-${dia}T${hora}:${minuto}`);
+                    localStorage.setItem('ultimoBackup', JSON.stringify({ nomeArquivo, data: dataArquivo.toISOString() }));
+                }
+
                 alert('Dados importados com sucesso!');
                 mostrarPagina('form-orcamento');
+                atualizarPainelUltimoBackup();
             } catch (erro) {
                 alert('Erro ao importar dados: ' + erro.message);
             }
@@ -545,6 +573,22 @@ function importarDados() {
     }
 }
 /* ==== FIM SEÇÃO - IMPORTAR/EXPORTAR ==== */
+
+/* ==== INÍCIO SEÇÃO - PAINEL ÚLTIMO BACKUP ==== */
+function atualizarPainelUltimoBackup() {
+    const ultimoBackup = JSON.parse(localStorage.getItem('ultimoBackup'));
+    const painel = document.getElementById('ultimoBackup');
+
+    if (ultimoBackup) {
+        const data = new Date(ultimoBackup.data);
+        const dataFormatada = `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()} ${data.getHours().toString().padStart(2, '0')}:${data.getMinutes().toString().padStart(2, '0')}`;
+
+        painel.innerHTML = `Último backup: ${dataFormatada}`;
+    } else {
+        painel.innerHTML = 'Nenhum backup encontrado';
+    }
+}
+/* ==== FIM SEÇÃO - PAINEL ÚLTIMO BACKUP ==== */
 
 /* ==== INÍCIO SEÇÃO - FUNÇÕES DE CONTROLE DE PÁGINA ==== */
 function mostrarPagina(idPagina) {
