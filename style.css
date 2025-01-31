@@ -126,9 +126,11 @@ label {
     font-weight: bold;
 }
 
+/* Estilos para todos os campos de texto, incluindo o novo campo de e-mail */
 input[type="text"],
 input[type="number"],
 input[type="date"],
+input[type="email"], /* Adicionado o seletor para o campo de e-mail */
 textarea {
     width: calc(100% - 22px);
     padding: 10px;
