@@ -20,11 +20,12 @@ function formatarMoeda(valor) {
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function formatarCampoMoeda(campo) {
-    let valor = campo.value.replace(/\D/g, '');
-    valor = (valor / 100).toFixed(2);
-    campo.value = formatarMoeda(parseFloat(valor));
-}
+// Esta função não é mais necessária, pois os campos são de texto livre
+// function formatarCampoMoeda(campo) {
+//     let valor = campo.value.replace(/\D/g, '');
+//     valor = (valor / 100).toFixed(2);
+//     campo.value = formatarMoeda(parseFloat(valor));
+// }
 
 function limparCamposMoeda() {
     const camposMoeda = ['valorFrete', 'valorOrcamento', 'total', 'entrada', 'restante', 'lucro',
@@ -48,7 +49,7 @@ function adicionarProduto() {
 
     cellQuantidade.innerHTML = '<input type="number" class="produto-quantidade" value="1" min="1" onchange="atualizarTotais()">';
     cellDescricao.innerHTML = '<input type="text" class="produto-descricao">';
-    cellValorUnit.innerHTML = '<input type="text" class="produto-valor-unit" value="0,00" oninput="formatarEntradaMoeda(this)" onblur="formatarCampoMoeda(this); atualizarTotais()">';
+    cellValorUnit.innerHTML = '<input type="text" class="produto-valor-unit" value="0,00" onblur="atualizarTotais()">';
     cellValorTotal.textContent = formatarMoeda(0);
 }
 
@@ -63,7 +64,7 @@ function adicionarProdutoEdicao() {
 
     cellQuantidade.innerHTML = '<input type="number" class="produto-quantidade" value="1" min="1" onchange="atualizarTotaisEdicao()">';
     cellDescricao.innerHTML = '<input type="text" class="produto-descricao">';
-    cellValorUnit.innerHTML = '<input type="text" class="produto-valor-unit" value="0,00" oninput="formatarEntradaMoeda(this)" onblur="formatarCampoMoeda(this); atualizarTotaisEdicao()">';
+    cellValorUnit.innerHTML = '<input type="text" class="produto-valor-unit" value="0,00" onblur="atualizarTotaisEdicao()">';
     cellValorTotal.textContent = formatarMoeda(0);
 }
 
@@ -73,14 +74,18 @@ function atualizarTotais() {
 
     produtos.forEach(row => {
         const quantidade = parseFloat(row.querySelector(".produto-quantidade").value);
-        const valorUnit = parseFloat(row.querySelector(".produto-valor-unit").value.replace(/[^\d,]/g, '').replace(',', '.'));
+        // Converter o valor para um número válido
+        const valorUnitText = row.querySelector(".produto-valor-unit").value.replace("R$", "").replace(".", "").replace(",", ".");
+        const valorUnit = parseFloat(valorUnitText) || 0;
         const valorTotal = quantidade * valorUnit;
 
         row.cells[3].textContent = formatarMoeda(valorTotal);
         valorTotalOrcamento += valorTotal;
     });
 
-    const valorFrete = parseFloat(document.getElementById("valorFrete").value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    // Converter o valor do frete para um número válido
+    const valorFreteText = document.getElementById("valorFrete").value.replace("R$", "").replace(".", "").replace(",", ".");
+    const valorFrete = parseFloat(valorFreteText) || 0;
     const total = valorTotalOrcamento + valorFrete;
 
     document.getElementById("valorOrcamento").value = formatarMoeda(valorTotalOrcamento);
@@ -93,14 +98,18 @@ function atualizarTotaisEdicao() {
 
     produtos.forEach(row => {
         const quantidade = parseFloat(row.querySelector(".produto-quantidade").value);
-        const valorUnit = parseFloat(row.querySelector(".produto-valor-unit").value.replace(/[^\d,]/g, '').replace(',', '.'));
+        // Converter o valor para um número válido
+        const valorUnitText = row.querySelector(".produto-valor-unit").value.replace("R$", "").replace(".", "").replace(",", ".");
+        const valorUnit = parseFloat(valorUnitText) || 0;
         const valorTotal = quantidade * valorUnit;
 
         row.cells[3].textContent = formatarMoeda(valorTotal);
         valorTotalPedido += valorTotal;
     });
 
-    const valorFrete = parseFloat(document.getElementById("valorFreteEdicao").value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    // Converter o valor do frete para um número válido
+    const valorFreteText = document.getElementById("valorFreteEdicao").value.replace("R$", "").replace(".", "").replace(",", ".");
+    const valorFrete = parseFloat(valorFreteText) || 0;
     const total = valorTotalPedido + valorFrete;
 
     document.getElementById("valorPedidoEdicao").value = formatarMoeda(valorTotalPedido);
@@ -110,8 +119,11 @@ function atualizarTotaisEdicao() {
 }
 
 function atualizarRestanteEdicao() {
-    const total = parseFloat(document.getElementById("totalEdicao").value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-    const entrada = parseFloat(document.getElementById("entradaEdicao").value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    // Converter os valores para números válidos
+    const totalText = document.getElementById("totalEdicao").value.replace("R$", "").replace(".", "").replace(",", ".");
+    const entradaText = document.getElementById("entradaEdicao").value.replace("R$", "").replace(".", "").replace(",", ".");
+    const total = parseFloat(totalText) || 0;
+    const entrada = parseFloat(entradaText) || 0;
     const restante = total - entrada;
 
     document.getElementById("restanteEdicao").value = formatarMoeda(restante);
@@ -121,33 +133,12 @@ function gerarNumeroFormatado(numero) {
     return numero.toString().padStart(4, '0') + '/' + anoAtual;
 }
 
-/* ==== NOVA FUNÇÃO PARA FORMATAÇÃO PROGRESSIVA DE MOEDA ==== */
-function formatarEntradaMoeda(input) {
-    // Remove todos os caracteres não numéricos, exceto vírgulas
-    let valor = input.value.replace(/[^0-9,]/g, '');
-
-    // Remove as vírgulas existentes e as substitui por um ponto para formatação
-    valor = valor.replace(/,/g, '.');
-
-    // Converte para número para formatação e volta para string
-    let numero = parseFloat(valor);
-
-    // Verifica se é um número válido
-    if (!isNaN(numero)) {
-        // Formata o número com 2 casas decimais
-        let valorFormatado = numero.toFixed(2);
-
-        // Substitui o ponto por vírgula
-        valorFormatado = valorFormatado.replace('.', ',');
-
-        // Define o novo valor formatado no campo
-        input.value = valorFormatado;
-    } else {
-        // Se não for um número válido, limpa o campo
-        input.value = '';
-    }
-}
+// Esta função não é mais necessária, pois não formatamos mais os campos automaticamente
+// function formatarEntradaMoeda(input) {
+//     // ... (remover o corpo da função)
+// }
 /* ==== FIM DA SEÇÃO - FUNÇÕES AUXILIARES ==== */
+
 
 /* ==== INÍCIO SEÇÃO - GERAÇÃO DE ORÇAMENTO ==== */
 function gerarOrcamento() {
@@ -812,4 +803,3 @@ function carregarDados() {
     numeroPedido = parseInt(localStorage.getItem('numeroPedido')) || 1;
 }
 /* ==== FIM SEÇÃO - FUNÇÕES DE CONTROLE DE PÁGINA ==== */
-
